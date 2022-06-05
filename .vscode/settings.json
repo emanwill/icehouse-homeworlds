@@ -1,0 +1,7 @@
+{
+  "editor.rulers": [80],
+  "editor.formatOnSave": true,
+  "prettier.printWidth": 80,
+  "prettier.semi": false,
+  "prettier.singleQuote": true
+}
