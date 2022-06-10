@@ -1,0 +1,9 @@
+{
+  "name": "@icehouse-homeworlds/api",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "default": "./index.d.ts"
+  },
+  "types": "./index.d.ts"
+}
