@@ -1,12 +1,8 @@
-import { Server, Socket } from 'socket.io'
-import { addUser, deleteUser, User } from '../dao/user-dao'
+import { IceworldsIOServer, IceworldsIOSocket } from '../express-io-server'
 
-export default function registerUserHandler(_io: Server, socket: Socket) {
-  const createUser = (userPayload: User) => {
-    addUser(socket.id, userPayload)
-  }
-
-  const removeUser = () => {
-    deleteUser(socket.id)
-  }
+export default function registerUserHandler(
+  _io: IceworldsIOServer,
+  _socket: IceworldsIOSocket
+) {
+  // TODO... I guess?
 }

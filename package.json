@@ -7,14 +7,6 @@
     "./common/*",
     "./application/*"
   ],
-  "old-scripts": {
-    "_dev": "concurrently --kill-others \"npm:watch\" \"npm:start\"",
-    "_watch": "webpack --watch",
-    "_test": "echo \"Error: no test specified\" && exit 1",
-    "_build-client": "webpack",
-    "_build-server": "npx rollup --config rollup.config.js",
-    "_start": "node dist-server/server.bundle.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/emanwill/icehouse-homeworlds.git"
