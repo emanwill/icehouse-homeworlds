@@ -137,12 +137,12 @@ interface BlueExploreAction extends AbstractBlueAction {
   newStarSize: TokenSize
 }
 
-type SetupAction =
+export type SetupAction =
   | HomeworldStar1SetupAction
   | HomeworldStar2SetupAction
   | HomeworldShipSetupAction
 
-type PlayerAction =
+export type PlayerAction =
   | CatastropheAction
   | SacrificeAction
   | RedAction
@@ -205,16 +205,17 @@ type PlayerEffect =
   | BlueExploreEffect
   | BlueTransitEffect
 
-type GameStateResponse = {
+export type GameState = {
   gameId: string
   version: number
   status: GameStatus
+  playerSlots: number
   players: PlayerDetails[]
   board: Board
   turnOf: string
 }
 
-type GameStateUpdateResponse = GameStateResponse & {
+type GameStateUpdate = GameState & {
   previousBoard: Board
   previousTurnOf: string
   previousTurnEffects: PlayerEffect[]
@@ -237,18 +238,12 @@ export type ctosGetGames = (cb: SocketAck<GameSummary[]>) => void
 
 export type ctosCreateGame = (
   options: CreateGameOptions,
-  cb: SocketAck<GameStateResponse>
+  cb: SocketAck<GameState>
 ) => void
 
-export type ctosJoinGame = (
-  gameId: string,
-  cb: SocketAck<GameStateResponse>
-) => void
+export type ctosJoinGame = (gameId: string, cb: SocketAck<GameState>) => void
 
-export type ctosBeginGame = (
-  gameId: string,
-  cb: SocketAck<GameStateResponse>
-) => void
+export type ctosBeginGame = (gameId: string, cb: SocketAck<GameState>) => void
 
 export type ctosCommitSetupAction = (
   action: PlayerSetupRequest,
@@ -264,4 +259,4 @@ export type ctosLeaveGame = (gameId: string, cb: SocketAck<boolean>) => void
 
 export type stocUpdateGames = (games: any[]) => void
 
-export type stocUpdateGameState = (gameState: GameStateUpdateResponse) => void
+export type stocUpdateGameState = (gameState: GameStateUpdate) => void

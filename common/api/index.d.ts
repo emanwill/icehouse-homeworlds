@@ -16,7 +16,13 @@ import {
   stocUpdateLobby,
 } from './lobby'
 
-export { TokenColor, TokenSize, GameStatus, PlayerStatus } from './game'
+export {
+  TokenColor,
+  TokenSize,
+  GameStatus,
+  PlayerStatus,
+  GameState,
+} from './game'
 
 export interface ClientToServerEvents {
   'lobby:join': ctosJoinLobby
