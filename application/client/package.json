@@ -4,6 +4,9 @@
   "description": "",
   "private": true,
   "scripts": {
+    "format": "prettier --write src/**/*.ts",
+  	"lint": "eslint --fix",
+  	"test": "echo \"skipping...\"",
     "start": "concurrently --kill-others 'npm:dev-server' 'npm:mock-server'",
     "dev-server": "webpack-dev-server --config webpack.config.dev.js",
     "mock-server": "node tools/mockServer.js",

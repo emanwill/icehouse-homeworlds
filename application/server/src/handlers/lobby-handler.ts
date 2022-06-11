@@ -14,7 +14,9 @@ export default function registerLobbyHandler(
     cb(null, { users: [] })
   }
 
-  const onLeaveLobby = () => {}
+  const onLeaveLobby = () => {
+    console.log('user %s wants to leave the lobby', username)
+  }
 
   const onSendChat = (message: string) => {
     console.log('got a chat message: %s', message)

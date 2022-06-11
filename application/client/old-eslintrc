@@ -7,5 +7,9 @@
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended"
   ],
-  "env": { "jest": true }
+  "env": { "jest": true },
+  "rules": {
+    "eol-last": ["warn", "always"],
+    "no-multiple-empty-lines": ["error", {"max": 2}]
+  }
 }

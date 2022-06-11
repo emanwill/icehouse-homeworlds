@@ -1,3 +1,4 @@
+/* eslint-disable */
 const pluginTypescript = require('@rollup/plugin-typescript')
 
 /** @type {import('rollup').RollupOptions} */

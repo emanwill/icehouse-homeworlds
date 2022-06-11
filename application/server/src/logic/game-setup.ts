@@ -19,6 +19,9 @@ declare type InitGameSetupOptions = {
   playerSlots: number
 }
 
+/**
+ * Instantiates a new GameState object
+ */
 export function createNewGame(options: InitGameSetupOptions): GameState {
   const unitCount = options.playerSlots + 1
 
@@ -47,6 +50,30 @@ export function createNewGame(options: InitGameSetupOptions): GameState {
   return newGame
 }
 
+export function canAddPlayer(game: GameState) {
+  return game.players.length < game.playerSlots
+}
+
+export function addPlayer(game: GameState, newPlayer: PlayerDetails) {
+  game = cloneJson(game)
+
+  game.players.push(newPlayer)
+
+  return game
+}
+
+export function removePlayer(game: GameState, playerId: string) {
+  game = cloneJson(game)
+
+  const idx = game.players.findIndex((p) => p.playerId === playerId)
+
+  if (idx < 0) return game
+
+  game.players.splice(idx, 1)
+
+  return game
+}
+
 export function applySetupActions(
   game: GameState,
   playerId: string,
@@ -67,8 +94,30 @@ function isValidSetupAction(
   playerId: string,
   action: SetupAction
 ): boolean {
-  // TODO
-  return false
+  // Check whether requester can even act here
+  if (game.turnOf !== playerId) return false
+
+  const stage = game.status
+
+  switch (action.type) {
+    case 'HOMEWORLD_STAR1_SETUP':
+      if (stage !== 'SETUP1') return false
+      if (!bankHasPiece(game, action.newStarColor, action.newStarSize))
+        return false
+      break
+    case 'HOMEWORLD_STAR2_SETUP':
+      if (stage !== 'SETUP2') return false
+      if (!bankHasPiece(game, action.newStarColor, action.newStarSize))
+        return false
+      break
+    case 'HOMEWORLD_SHIP_SETUP':
+      if (stage !== 'SETUP3') return false
+      if (!bankHasPiece(game, action.newShipColor, action.newShipSize))
+        return false
+      break
+  }
+
+  return true
 }
 
 function applySetupAction(
@@ -89,4 +138,20 @@ function applySetupAction(
   }
 
   return game
+}
+
+function bankHasPiece(
+  game: GameState,
+  color: TokenColor,
+  size: TokenSize
+): boolean {
+  return game.board.bank[color][size] > 0
+}
+
+function removeBankPiece(game: GameState, color: TokenColor, size: TokenSize) {
+  game.board.bank[color][size]--
+}
+
+function restoreBankPiece(game: GameState, color: TokenColor, size: TokenSize) {
+  game.board.bank[color][size]++
 }
