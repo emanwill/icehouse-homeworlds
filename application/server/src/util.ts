@@ -9,8 +9,7 @@ export const getNetworkAddresses = (): string[] =>
   Object.values(networkInterfaces())
     .flatMap((a) => a)
     .filter((iface) => iface?.family === 'IPv4')
-    .map((iface) => iface?.address)
-    .filter((addr) => !!addr)
+    .map((iface) => iface?.address ?? '')
 
 export const createId = (prefix: string, bytes: number) =>
   prefix + randomBytes(bytes).toString('hex')
