@@ -1,18 +1,19 @@
 import {
   GameState,
+  GameStateUpdate,
   PlayerDetails,
   SetupAction,
+  SetupEffect,
   TokenBank,
   TokenColor,
   TokenSize,
 } from '@icehouse-homeworlds/api/game'
-import { cloneJson, createId } from '../util'
-
-const colorsTuple = <T extends TokenColor[]>(...args: T) => args
-const allColors = colorsTuple('red', 'yellow', 'green', 'blue')
-
-const sizesTuple = <T extends TokenSize[]>(...args: T) => args
-const allSizes = sizesTuple('small', 'medium', 'large')
+import { cloneGame, createId } from '../util'
+import {
+  applyHwShipSetupAction,
+  applyHwStar1SetupAction,
+  applyHwStar2SetupAction,
+} from './game-setup-actions'
 
 declare type InitGameSetupOptions = {
   firstPlayer: PlayerDetails
@@ -25,13 +26,18 @@ declare type InitGameSetupOptions = {
 export function createNewGame(options: InitGameSetupOptions): GameState {
   const unitCount = options.playerSlots + 1
 
-  const createSizes = (): { [T in TokenSize]: number } =>
-    Object.assign({}, ...allSizes.map((s) => ({ [s]: unitCount })))
+  const createSizes = (): { [S in TokenSize]: number } => ({
+    small: unitCount,
+    medium: unitCount,
+    large: unitCount,
+  })
 
-  const bank: TokenBank = Object.assign(
-    {},
-    ...allColors.map((c) => ({ [c]: createSizes() }))
-  )
+  const bank: TokenBank = {
+    red: createSizes(),
+    yellow: createSizes(),
+    green: createSizes(),
+    blue: createSizes(),
+  }
 
   const newGame: GameState = {
     gameId: createId('gam', 6),
@@ -55,7 +61,7 @@ export function canAddPlayer(game: GameState) {
 }
 
 export function addPlayer(game: GameState, newPlayer: PlayerDetails) {
-  game = cloneJson(game)
+  game = cloneGame(game)
 
   game.players.push(newPlayer)
 
@@ -63,7 +69,7 @@ export function addPlayer(game: GameState, newPlayer: PlayerDetails) {
 }
 
 export function removePlayer(game: GameState, playerId: string) {
-  game = cloneJson(game)
+  game = cloneGame(game)
 
   const idx = game.players.findIndex((p) => p.playerId === playerId)
 
@@ -76,20 +82,36 @@ export function removePlayer(game: GameState, playerId: string) {
 
 export function applySetupActions(
   game: GameState,
-  playerId: string,
   setupActions: SetupAction[]
-) {
-  game = cloneJson(game)
+): GameStateUpdate {
+  const oldGameState = game
 
-  if (game.turnOf !== playerId) throw Error('ASDF!')
+  type SetupAccumulator = {
+    game: GameState
+    effects: SetupEffect[]
+  }
 
-  const applyAction = (g: GameState, a: SetupAction) =>
-    applySetupAction(g, playerId, a)
+  const setupActionReducer = (acc: SetupAccumulator, action: SetupAction) => {
+    const [effect, newState] = applySetupAction(acc.game, action)
+    acc.effects.push(effect)
+    acc.game = newState
+    return acc
+  }
 
-  return setupActions.reduce(applyAction, game)
+  const acc = setupActions.reduce(setupActionReducer, { game, effects: [] })
+
+  const update: GameStateUpdate = {
+    ...acc.game,
+    previousBoard: oldGameState.board,
+    previousTurnEffects: acc.effects,
+    previousTurnOf: oldGameState.turnOf,
+    version: oldGameState.version + 1,
+  }
+
+  return update
 }
 
-function isValidSetupAction(
+export function isValidSetupAction(
   game: GameState,
   playerId: string,
   action: SetupAction
@@ -120,24 +142,26 @@ function isValidSetupAction(
   return true
 }
 
-function applySetupAction(
+export function applySetupAction(
   game: GameState,
-  playerId: string,
   action: SetupAction
-): GameState {
-  // Assumes the action is valid
+): [SetupEffect, GameState] {
+  game = cloneGame(game)
 
-  // Perform requested action
+  let result: [SetupEffect, GameState] | [] = []
   switch (action.type) {
     case 'HOMEWORLD_STAR1_SETUP':
+      result = applyHwStar1SetupAction(game, action)
       break
     case 'HOMEWORLD_STAR2_SETUP':
+      result = applyHwStar2SetupAction(game, action)
       break
     case 'HOMEWORLD_SHIP_SETUP':
+      result = applyHwShipSetupAction(game, action)
       break
   }
 
-  return game
+  return result
 }
 
 function bankHasPiece(
@@ -146,12 +170,4 @@ function bankHasPiece(
   size: TokenSize
 ): boolean {
   return game.board.bank[color][size] > 0
-}
-
-function removeBankPiece(game: GameState, color: TokenColor, size: TokenSize) {
-  game.board.bank[color][size]--
-}
-
-function restoreBankPiece(game: GameState, color: TokenColor, size: TokenSize) {
-  game.board.bank[color][size]++
 }

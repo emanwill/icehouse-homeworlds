@@ -1,8 +1,10 @@
-import { SocketAck } from './common'
+import { SocketAck, TupleToUnion } from './common'
 
-export type TokenColor = 'red' | 'yellow' | 'green' | 'blue'
+export type TokenColorTuple = ['red', 'yellow', 'green', 'blue']
+export type TokenColor = TupleToUnion<TokenColorTuple>
 
-export type TokenSize = 'small' | 'medium' | 'large'
+export type TokenSizeTuple = ['small', 'medium', 'large']
+export type TokenSize = TupleToUnion<TokenSizeTuple>
 
 export type GameStatus =
   | 'AWAIT_PLAYERS'
@@ -22,7 +24,6 @@ type Ship = {
   color: TokenColor
   size: TokenSize
   playerId: string
-  systemId: string
 }
 
 type Star = {
@@ -141,6 +142,11 @@ export type SetupAction =
   | HomeworldStar1SetupAction
   | HomeworldStar2SetupAction
   | HomeworldShipSetupAction
+
+export type SetupEffect =
+  | HomeworldStar1SetupEffect
+  | HomeworldStar2SetupEffect
+  | HomeworldShipSetupEffect
 
 export type PlayerAction =
   | CatastropheAction
