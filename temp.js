@@ -1,5 +1,7 @@
+/* eslint-ignore */
 // @ts-check
 const { randomBytes } = require('crypto')
+const NestedPrintout = require('./print-nester')
 
 /** @typedef {import('@icehouse-homeworlds/api/game').GameState} GameState */
 /** @typedef {import('@icehouse-homeworlds/api/game').TokenColor} TokenColor */
@@ -11,17 +13,17 @@ const colors = ['red', 'yellow', 'green', 'blue']
 /** @type {TokenSize[]} */
 const sizes = ['small', 'medium', 'large']
 
-const ID_LEN = 6
+const ID_LEN = 8
 
 const createId = (prefix, bytes) => prefix + randomBytes(bytes).toString('hex')
 
 const GameObjectIds = {
-  game: () => createId('game', ID_LEN),
-  homeworldSystem: () => createId('hwld', ID_LEN),
-  player: () => createId('plyr', ID_LEN),
-  ship: () => createId('ship', ID_LEN),
-  star: () => createId('star', ID_LEN),
-  starSystem: () => createId('ssys', ID_LEN),
+  game: () => createId('gm:', ID_LEN),
+  homeworldSystem: () => createId('hw:', ID_LEN),
+  player: () => createId('pl:', ID_LEN),
+  ship: () => createId('sh:', ID_LEN),
+  star: () => createId('st:', ID_LEN),
+  starSystem: () => createId('sy:', ID_LEN),
 }
 
 /**
@@ -44,19 +46,42 @@ const pieceNo = (color, size) => {
 
 /**
  *
+ * @param {string} id
+ */
+const shortId = (id) => /^(\w+):.*([0-9a-f]{4}$)/.exec(id).slice(1).join('..')
+
+/**
+ *
  * @param {import('@icehouse-homeworlds/api/game').Ship} ship
  */
-const shipDesc = (ship, prefix = '') => {
+const shipDesc = (ship) => {
   const piece = pieceNo(ship.color, ship.size)
-  return `${prefix}${ship.shipId} (${piece}) owned by ${ship.playerId}`
+  return `(${piece}) owned by ${shortId(ship.playerId)}`
 }
 
 /**
  *
  * @param {import('@icehouse-homeworlds/api/game').Star} star
  */
-const starDesc = (star, prefix = '') => {
-  return `${prefix}${star.starId} (${pieceNo(star.color, star.size)})`
+const starDesc = (star) => {
+  return `${shortId(star.starId)} (${pieceNo(star.color, star.size)})`
+}
+
+/**
+ *
+ * @param {import('@icehouse-homeworlds/api/game').StarSystem} system
+ */
+const systemDesc = ({ systemId, star }) => {
+  return `${shortId(systemId)} (${pieceNo(star.color, star.size)})`
+}
+
+/**
+ *
+ * @param {import('@icehouse-homeworlds/api/game').HomeworldSystem} param0
+ */
+const homeworldDesc = ({ systemId, playerId, stars }) => {
+  const starsDesc = stars.map((s) => pieceNo(s.color, s.size)).join(',')
+  return `${shortId(systemId)} (${starsDesc}) owned by ${shortId(playerId)}`
 }
 
 /**
@@ -72,38 +97,54 @@ function printGameState({
   players,
   board,
 }) {
-  const lines = []
+  const printout = new NestedPrintout()
+
   const moveNo = version.toString().padStart(3, '0')
-  lines.push(`┌ GAME ${gameId}`)
-  lines.push(`│ ${playerSlots} players, move #${moveNo}, status: ${status}`)
-  lines.push(`│\n├ Players:`)
+  printout.addLine(`GAME ${gameId}`)
+  const summary = `${playerSlots} players, move #${moveNo}, status: ${status}`
+  printout.addNestedLevel().addLine(summary).addLine('')
 
-  players.forEach((p) => {
-    const pin = p.playerId === turnOf ? '>' : ' '
-    lines.push(
-      `│ ${pin} ${p.playerId}  ${p.status.padEnd(10)}  ${p.playerName.padEnd(
-        16
-      )}`
-    )
+  const plrsPrint = printout.addNestedLevel()
+  plrsPrint.addLine('Players:')
+  players.forEach(({ playerId: id, status, playerName: name }) => {
+    const pin = id === turnOf ? '>' : ' '
+    const str = `${pin} ${id} ${status.padEnd(10)} ${name.padEnd(16)}`
+    plrsPrint.addLine(str)
+  })
+  plrsPrint.addLine('')
+
+  const bankPrint = printout.addNestedLevel()
+  bankPrint.addLine('Token Bank:')
+  bankPrint.addLine(`    (${colors.map(firstInitial).join(') (')})`)
+  sizes.forEach((s, idx) => {
+    const countStr = colors.map((c) => board.bank[c][s].toString()).join('   ')
+    bankPrint.addLine(`(${idx + 1})  ${countStr}`)
+  })
+  bankPrint.addLine('')
+
+  const hmwsPrint = printout.addNestedLevel()
+  hmwsPrint.addLine('Homeworld Systems:')
+  board.homeworlds.forEach((hw, idx, arr) => {
+    const hwPrint = hmwsPrint.addNestedLevel()
+    hwPrint.addLine(`${homeworldDesc(hw)}`)
+    const starsDesc = hw.stars.map(starDesc).join(', ')
+    // hwPrint.addNestedLevel().addLine('stars: ' + starsDesc)
+    const shipsPrint = hwPrint.addNestedLevel().addLine('ships:')
+    hw.ships.forEach((ship) => shipsPrint.addLine(shipDesc(ship)))
+    shipsPrint.addLine('')
   })
 
-  lines.push(`│\n├ Token Bank:`)
-  lines.push(`│    ${colors.map(firstInitial).join(' ')}`)
-  sizes.forEach((s) => {
-    const countStr = colors.map((c) => board.bank[c][s].toString()).join(' ')
-    lines.push(`│  ${firstInitial(s)} ${countStr}`)
+  const syssPrint = printout.addNestedLevel()
+  syssPrint.addLine('Other Systems:')
+  board.systems.forEach((sys) => {
+    const sPrint = syssPrint.addNestedLevel()
+    sPrint.addLine(systemDesc(sys))
+    const shPrint = sPrint.addNestedLevel().addLine('ships:')
+    sys.ships.forEach((sh) => shPrint.addLine(shipDesc(sh)))
+    shPrint.addLine('')
   })
 
-  lines.push(`│\n├ Homeworld Systems:`)
-  board.homeworlds.forEach((hw) => {
-    lines.push(`│  │  │${hw.systemId}, home of ${hw.playerId}`)
-    const starsStr = hw.stars.map((s) => starDesc(s)).join(', ')
-    lines.push(`│  ├ stars: ${starsStr}`)
-    lines.push('│  │\n│  ├ ships:\n│  │')
-    const shipDescs = hw.ships.map((s) => shipDesc(s))
-  })
-
-  console.log(lines.join('\n'))
+  console.log(printout.toString())
 }
 
 // ========================================================================== //
@@ -118,7 +159,7 @@ const exampleGameState = {
   gameId: GameObjectIds.game(),
   status: 'PLAY',
   version: 7,
-  turnOf: p1Id,
+  turnOf: p2Id,
   playerSlots: 2,
   players: [
     {
@@ -150,6 +191,18 @@ const exampleGameState = {
             color: 'blue',
             size: 'medium',
           },
+          {
+            playerId: p2Id,
+            shipId: GameObjectIds.ship(),
+            color: 'red',
+            size: 'small',
+          },
+          {
+            playerId: p1Id,
+            shipId: GameObjectIds.ship(),
+            color: 'yellow',
+            size: 'small',
+          },
         ],
         stars: [
           {
@@ -164,6 +217,21 @@ const exampleGameState = {
           },
         ],
       },
+      {
+        systemId: GameObjectIds.homeworldSystem(),
+        playerId: p2Id,
+        stars: [
+          { starId: GameObjectIds.star(), color: 'green', size: 'large' },
+        ],
+        ships: [
+          {
+            shipId: GameObjectIds.ship(),
+            playerId: p2Id,
+            color: 'yellow',
+            size: 'large',
+          },
+        ],
+      },
     ],
     systems: [
       {
@@ -175,6 +243,18 @@ const exampleGameState = {
             shipId: GameObjectIds.ship(),
             color: 'blue',
             size: 'large',
+          },
+        ],
+      },
+      {
+        systemId: GameObjectIds.starSystem(),
+        star: { starId: GameObjectIds.star(), color: 'red', size: 'medium' },
+        ships: [
+          {
+            shipId: GameObjectIds.ship(),
+            playerId: p2Id,
+            color: 'blue',
+            size: 'small',
           },
         ],
       },
