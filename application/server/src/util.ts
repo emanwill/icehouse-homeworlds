@@ -1,9 +1,20 @@
-import { GameState } from '@icehouse-homeworlds/api/game'
+import { AbstractSystem, GameState } from '@icehouse-homeworlds/api/game'
 import { randomBytes } from 'crypto'
 import { networkInterfaces } from 'os'
 import rfdc from 'rfdc'
+import { createLogger, format, transports } from 'winston'
 
 const ID_LEN = 6
+
+export const log = createLogger({
+  level: 'info',
+  format: format.simple(),
+  transports: [
+    new transports.Console({ level: 'info' }),
+    new transports.File({ filename: 'error.log', level: 'error' }),
+    new transports.File({ filename: 'service.log' }),
+  ],
+})
 
 export const getNetworkAddresses = (): string[] =>
   Object.values(networkInterfaces())
@@ -15,11 +26,12 @@ export const createId = (prefix: string, bytes: number) =>
   prefix + randomBytes(bytes).toString('hex')
 
 export const GameObjectIds = {
-  homeworldSystem: () => createId('hws', ID_LEN),
-  player: () => createId('plr', ID_LEN),
-  ship: () => createId('shp', ID_LEN),
-  star: () => createId('str', ID_LEN),
-  starSystem: () => createId('sts', ID_LEN),
+  game: () => createId('gm:', ID_LEN),
+  homeworldSystem: () => createId('hw:', ID_LEN),
+  player: () => createId('pl:', ID_LEN),
+  ship: () => createId('sp:', ID_LEN),
+  star: () => createId('st:', ID_LEN),
+  starSystem: () => createId('sy:', ID_LEN),
 }
 
 export const awaitTimeout = (delay = 0) =>
@@ -29,19 +41,3 @@ const cloneWithProtoNoCircle = rfdc({ proto: true, circles: false })
 
 export const cloneGame = (game: GameState): GameState =>
   cloneWithProtoNoCircle(game)
-
-export const getNextTurnPlayerId = (game: GameState, reverseOrder = false) => {
-  let idx = game.players.findIndex((p) => p.playerId === game.turnOf)
-
-  if (idx < 0) return
-
-  if (reverseOrder) {
-    idx--
-    if (idx < 0) idx += game.players.length
-  } else {
-    idx++
-    if (idx >= game.players.length) idx -= game.players.length
-  }
-
-  return game.players[idx].playerId
-}

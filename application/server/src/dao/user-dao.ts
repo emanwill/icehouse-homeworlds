@@ -4,14 +4,14 @@ export type User = {
 
 const socketUserMap = new Map<string, User>()
 
-export function addUser(id: string, user: User) {
-  socketUserMap.set(id, user)
+export function addUser(socketId: string, user: User) {
+  socketUserMap.set(socketId, user)
 }
 
-export function getUser(id: string) {
+export function findUserBySocketId(id: string) {
   return socketUserMap.get(id)
 }
 
-export function deleteUser(id: string) {
+export function deleteUserBySocketId(id: string) {
   socketUserMap.delete(id)
 }

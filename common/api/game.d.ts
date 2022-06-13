@@ -69,7 +69,7 @@ export interface EndTurnAction extends AbstractPlayerAction {
   type: 'END_TURN'
 }
 
-export interface EndTurnEffect extends EndTurnAction {}
+export type EndTurnEffect = EndTurnAction
 
 export interface HomeworldStar1SetupAction extends AbstractPlayerAction {
   type: 'HOMEWORLD_STAR1_SETUP'
@@ -110,11 +110,7 @@ export interface CatastropheAction extends AbstractPlayerAction {
   color: TokenColor
 }
 
-export interface CatastropheEffect extends CatastropheAction {
-  systemDestroyed: boolean
-  starsLost: string[]
-  shipsLost: string[]
-}
+export type CatastropheEffect = CatastropheAction
 
 export interface SacrificeAction extends AbstractPlayerAction {
   type: 'SACRIFICE'
@@ -122,7 +118,7 @@ export interface SacrificeAction extends AbstractPlayerAction {
   shipId: string
 }
 
-export interface SacrificeEffect extends SacrificeAction {}
+export type SacrificeEffect = SacrificeAction
 
 interface AbstractNormalAction extends AbstractPlayerAction {
   type: 'NORMAL'
@@ -136,7 +132,7 @@ export interface RedAction extends AbstractNormalAction {
   victimShipId: string
 }
 
-export interface RedEffect extends RedAction {}
+export type RedEffect = RedAction
 
 export interface YellowAction extends AbstractNormalAction {
   color: 'yellow'
@@ -174,7 +170,7 @@ export interface BlueTransitAction extends AbstractBlueAction {
   transitTo: string
 }
 
-export interface BlueTransitEffect extends BlueTransitAction {}
+export type BlueTransitEffect = BlueTransitAction
 
 export interface BlueExploreAction extends AbstractBlueAction {
   isExplore: true
@@ -227,7 +223,7 @@ export type NormalEffect =
 type PlayerSetupPayload = {
   gameId: string
   version: number
-  action: SetupAction
+  actions: SetupAction[]
 }
 
 type PlayerGameplayPayload = {
@@ -290,8 +286,8 @@ export type ctosCommitGameAction = (
   cb: SocketAck<boolean>
 ) => void
 
-export type ctosLeaveGame = (gameId: string, cb: SocketAck<boolean>) => void
+export type ctosLeaveGame = (gameId: string) => void
 
-export type stocUpdateGames = (games: any[]) => void
+export type stocUpdateGames = (games: GameSummary[]) => void
 
 export type stocUpdateGameState = (gameState: GameStateUpdate) => void

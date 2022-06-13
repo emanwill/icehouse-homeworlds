@@ -1,3 +1,6 @@
+import { Socket } from 'socket.io'
+import { GameObjectIds } from '../util'
+
 type PlayerSocket = {
   socketId: string
   playerId: string
@@ -6,6 +9,18 @@ type PlayerSocket = {
 const mapBySocketId = new Map<string, PlayerSocket>()
 
 const mapByPlayerId = new Map<string, PlayerSocket>()
+
+export const createPlayer = (ioSocket: Socket) => {
+  const socket: PlayerSocket = {
+    socketId: ioSocket.id,
+    playerId: GameObjectIds.player(),
+  }
+
+  mapBySocketId.set(socket.socketId, socket)
+  mapByPlayerId.set(socket.playerId, socket)
+
+  return socket.playerId
+}
 
 export const addPlayerSocket = (socket: PlayerSocket) => {
   mapBySocketId.set(socket.socketId, socket)

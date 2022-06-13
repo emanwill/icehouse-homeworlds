@@ -8,12 +8,8 @@ import {
   TokenColor,
   TokenSize,
 } from '@icehouse-homeworlds/api/game'
-import { cloneGame, createId } from '../util'
-import {
-  applyHwShipSetupAction,
-  applyHwStar1SetupAction,
-  applyHwStar2SetupAction,
-} from './game-setup-actions'
+import { cloneGame, GameObjectIds } from '../util'
+import { applySetupAction } from './game-setup-actions'
 
 declare type InitGameSetupOptions = {
   firstPlayer: PlayerDetails
@@ -40,7 +36,7 @@ export function createNewGame(options: InitGameSetupOptions): GameState {
   }
 
   const newGame: GameState = {
-    gameId: createId('gam', 6),
+    gameId: GameObjectIds.game(),
     version: 0,
     playerSlots: options.playerSlots,
     players: [options.firstPlayer],
@@ -140,28 +136,6 @@ export function isValidSetupAction(
   }
 
   return true
-}
-
-export function applySetupAction(
-  game: GameState,
-  action: SetupAction
-): [SetupEffect, GameState] {
-  game = cloneGame(game)
-
-  let result: [SetupEffect, GameState] | [] = []
-  switch (action.type) {
-    case 'HOMEWORLD_STAR1_SETUP':
-      result = applyHwStar1SetupAction(game, action)
-      break
-    case 'HOMEWORLD_STAR2_SETUP':
-      result = applyHwStar2SetupAction(game, action)
-      break
-    case 'HOMEWORLD_SHIP_SETUP':
-      result = applyHwShipSetupAction(game, action)
-      break
-  }
-
-  return result
 }
 
 function bankHasPiece(

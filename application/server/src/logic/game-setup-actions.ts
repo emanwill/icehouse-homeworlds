@@ -7,17 +7,49 @@ import {
   HomeworldStar2SetupAction,
   HomeworldStar2SetupEffect,
   HomeworldSystem,
+  SetupAction,
+  SetupEffect,
   Ship,
   Star,
 } from '@icehouse-homeworlds/api/game'
-import { cloneGame, GameObjectIds, getNextTurnPlayerId } from '../util'
+import { cloneGame, GameObjectIds } from '../util'
+
+const getNextTurnPlayerId = (game: GameState, reverseOrder = false) => {
+  let idx = game.players.findIndex((p) => p.playerId === game.turnOf)
+
+  if (idx < 0) return
+
+  if (reverseOrder) {
+    idx--
+    if (idx < 0) idx += game.players.length
+  } else {
+    idx++
+    if (idx >= game.players.length) idx -= game.players.length
+  }
+
+  return game.players[idx].playerId
+}
+
+export function applySetupAction(
+  game: GameState,
+  action: SetupAction
+): [SetupEffect, GameState] {
+  game = cloneGame(game)
+
+  switch (action.type) {
+    case 'HOMEWORLD_STAR1_SETUP':
+      return applyHwStar1SetupAction(game, action)
+    case 'HOMEWORLD_STAR2_SETUP':
+      return applyHwStar2SetupAction(game, action)
+    case 'HOMEWORLD_SHIP_SETUP':
+      return applyHwShipSetupAction(game, action)
+  }
+}
 
 export function applyHwStar1SetupAction(
   game: GameState,
   action: HomeworldStar1SetupAction
 ): [HomeworldStar1SetupEffect, GameState] {
-  game = cloneGame(game)
-
   // Create the new star
   const star: Star = {
     starId: GameObjectIds.star(),
@@ -34,6 +66,7 @@ export function applyHwStar1SetupAction(
     playerId: game.turnOf,
     stars: [star],
     ships: [],
+    isHomeworld: true,
   }
 
   // Apply the new homeworld system to the game board
@@ -66,8 +99,6 @@ export function applyHwStar2SetupAction(
   game: GameState,
   action: HomeworldStar2SetupAction
 ): [HomeworldStar2SetupEffect, GameState] {
-  game = cloneGame(game)
-
   // Create new star
   const star: Star = {
     starId: GameObjectIds.star(),
@@ -112,8 +143,6 @@ export function applyHwShipSetupAction(
   game: GameState,
   action: HomeworldShipSetupAction
 ): [HomeworldShipSetupEffect, GameState] {
-  game = cloneGame(game)
-
   // Create new ship
   const ship: Ship = {
     shipId: GameObjectIds.ship(),

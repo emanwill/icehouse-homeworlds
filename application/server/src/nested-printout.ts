@@ -1,21 +1,15 @@
-class NestedPrintout {
-  /**
-   *
-   * @param {NestedPrintout} [parent]
-   */
-  constructor(parent) {
+export default class NestedPrintout {
+  parent?: NestedPrintout
+  children: NestedPrintout[]
+  lines: string[]
+
+  constructor(parent?: NestedPrintout) {
     this.parent = parent
-    /** @type {NestedPrintout[]} */
     this.children = []
-    /** @type {string[]} */
     this.lines = []
   }
 
-  /**
-   *
-   * @param {string} str
-   */
-  addLine(str) {
+  addLine(str: string) {
     this.lines.push(str)
     return this
   }
@@ -27,13 +21,10 @@ class NestedPrintout {
   }
 
   returnToParent() {
-    return this.parent
+    return this.parent ?? this
   }
 
-  /**
-   * @returns {string[]}
-   */
-  toLines() {
+  toLines(): string[] {
     /*
     Strategy:
     own lines don't get indented, don't get branch prefixing
@@ -49,12 +40,8 @@ class NestedPrintout {
         else return otherLinePrefix + str
       })
 
-      // if (idx < arr.length - 1) prefixedLines.push(otherLinePrefix)
-
       return prefixedLines
     })
-
-    // if (this.children.length > 0) this.addLine('│ ')
 
     return this.lines.concat(childLines)
   }
@@ -63,5 +50,3 @@ class NestedPrintout {
     return this.toLines().join('\n')
   }
 }
-
-module.exports = NestedPrintout

@@ -28,25 +28,30 @@ import {
 } from '@icehouse-homeworlds/api/game'
 import { cloneGame, GameObjectIds } from '../util'
 
-export function applyPlayerAction(
+export default function applyGameplayAction(
   game: GameState,
   action: GameplayAction
 ): [GameplayEffect, GameState] {
   game = cloneGame(game)
 
+  let result: [GameplayEffect, GameState]
   switch (action.type) {
     case 'CATASTROPHE':
-      return applyCatastropheAction(game, action)
+      result = applyCatastropheAction(game, action)
+      break
     case 'SACRIFICE':
-      return applySacrificeAction(game, action)
+      result = applySacrificeAction(game, action)
+      break
     case 'NORMAL':
-      return applyNormalAction(game, action)
+      result = applyNormalAction(game, action)
+      break
     case 'END_TURN':
-      return applyEndTurnAction(game, action)
+      result = applyEndTurnAction(game, action)
   }
+  return result
 }
 
-export function applyEndTurnAction(
+function applyEndTurnAction(
   game: GameState,
   action: EndTurnAction
 ): [EndTurnEffect, GameState] {
@@ -73,7 +78,7 @@ export function applyEndTurnAction(
   return [action, game]
 }
 
-export function applyNormalAction(
+function applyNormalAction(
   game: GameState,
   action: NormalAction
 ): [NormalEffect, GameState] {
@@ -92,35 +97,46 @@ export function applyNormalAction(
   }
 }
 
-export function applyCatastropheAction(
+function applyCatastropheAction(
   game: GameState,
   action: CatastropheAction
 ): [CatastropheEffect, GameState] {
-  // TODO
   const system = findSystemById(game, action.systemId)
 
-  let systemDestroyed = false
-  const starsLost: string[] = []
-  const shipsLost: string[] = []
+  // Remove any ships matching the catastrophe color
+  system.ships
+    .filter((s) => s.color === action.color)
+    .forEach((ship) => removeShipById(game, system.systemId, ship.shipId))
 
-  // First, destroy any directly affected ships
+  if (system.ships.length === 0) {
+    // If all ships are removed, remove the system
+    removeSystemById(game, system.systemId)
+  } else if (system.isHomeworld) {
+    // Homeworld system: remove applicable stars
+    system.stars.forEach((star, idx) => {
+      if (star.color === action.color) {
+        system.stars.splice(idx, 1)
+        game.board.bank[star.color][star.size]++
+      }
+    })
 
-  // Different conditions depending on whether is homeworld system
-  if (system.isHomeworld) {
+    // If all stars have been removed, remove the system
+    if (system.stars.length === 0) {
+      removeSystemById(game, system.systemId)
+    }
   } else if (system.star.color === action.color) {
+    // Normal system: remove system if star is affected
+    removeSystemById(game, system.systemId)
   }
 
   const effect: CatastropheEffect = {
     ...action,
-    systemDestroyed,
-    starsLost,
-    shipsLost,
   }
 
   return [effect, game]
 }
 
-export function applySacrificeAction(
+function applySacrificeAction(
   game: GameState,
   action: SacrificeAction
 ): [SacrificeEffect, GameState] {
@@ -130,10 +146,10 @@ export function applySacrificeAction(
 
   if (shipIdx < 0) throw Error('How did we get here?! Ship does not exist!')
 
-  const ship = system!.ships[shipIdx]
+  const ship = system.ships[shipIdx]
 
   // Remove ship from board and return its token to the bank
-  system!.ships.splice(shipIdx, 1)
+  system.ships.splice(shipIdx, 1)
   game.board.bank[ship.color][ship.size]++
 
   // Grant the player a corresponding number of normal actions
@@ -149,7 +165,7 @@ export function applySacrificeAction(
   return [effect, game]
 }
 
-export function applyRedAction(
+function applyRedAction(
   game: GameState,
   action: RedAction
 ): [RedEffect, GameState] {
@@ -167,7 +183,7 @@ export function applyRedAction(
   return [effect, game]
 }
 
-export function applyYellowAction(
+function applyYellowAction(
   game: GameState,
   action: YellowAction
 ): [YellowEffect, GameState] {
@@ -192,7 +208,7 @@ export function applyYellowAction(
   return [effect, game]
 }
 
-export function applyGreenAction(
+function applyGreenAction(
   game: GameState,
   action: GreenAction
 ): [GreenEffect, GameState] {
@@ -222,7 +238,7 @@ export function applyGreenAction(
   return [effect, game]
 }
 
-export function applyBlueExploreAction(
+function applyBlueExploreAction(
   game: GameState,
   action: BlueExploreAction
 ): [BlueExploreEffect, GameState] {
@@ -268,7 +284,7 @@ export function applyBlueExploreAction(
   return [effect, game]
 }
 
-export function applyBlueTransitAction(
+function applyBlueTransitAction(
   game: GameState,
   action: BlueTransitAction
 ): [BlueTransitEffect, GameState] {
@@ -296,7 +312,7 @@ export function applyBlueTransitAction(
     ...action,
   }
 
-  return [action, game]
+  return [effect, game]
 }
 
 function findSystemById(
@@ -323,36 +339,23 @@ function numericSize(size: TokenSize) {
 function removeSystemById(game: GameState, systemId: string) {
   const system = findSystemById(game, systemId)
 
-  const starIds: string[] = []
-  const shipIds: string[] = []
-
   // Return any ships' tokens to the bank
-  system.ships
-    .map((s) => removeShipById(game, systemId, s.shipId))
-    .forEach((s) => (s ? shipIds.push(s.shipId) : null))
+  system.ships.forEach((s) => removeShipById(game, systemId, s.shipId))
 
   if (system.isHomeworld) {
-    system.stars.forEach(({ starId, color, size }) => {
+    system.stars.forEach(({ color, size }) => {
       game.board.bank[color][size]++
-      starIds.push(starId)
     })
 
     const sysIdx = game.board.homeworlds.indexOf(system)
     game.board.homeworlds.splice(sysIdx, 1)
   } else {
-    const { starId, color, size } = system.star
+    const { color, size } = system.star
 
     game.board.bank[color][size]++
-    starIds.push(starId)
 
     const sysIdx = game.board.systems.indexOf(system)
     game.board.systems.splice(sysIdx, 1)
-  }
-
-  return {
-    systemId: system.systemId,
-    starIds,
-    shipIds,
   }
 }
 
@@ -371,6 +374,5 @@ function removeShipById(game: GameState, systemId: string, shipId: string) {
   if (shipIdx > -1) {
     const ship = system.ships.splice(shipIdx, 1)[0]
     game.board.bank[ship.color][ship.size]++
-    return { shipId: ship.shipId }
   }
 }

@@ -6,6 +6,8 @@ import {
   ctosGetGames,
   ctosJoinGame,
   ctosLeaveGame,
+  stocUpdateGames,
+  stocUpdateGameState,
 } from './game'
 import {
   ctosJoinLobby,
@@ -41,4 +43,6 @@ export interface ServerToClientEvents {
   'lobby:update': stocUpdateLobby
   'lobby:chatMessage': stocLobbyChatMessage
   'lobby:systemMessage': stocLobbySystemMessage
+  'game:list': stocUpdateGames
+  'game:state': stocUpdateGameState
 }

@@ -1,4 +1,4 @@
-import { GameState, PlayerSetupRequest } from '@icehouse-homeworlds/api/game'
+import { GameState, PlayerSetupPayload } from '@icehouse-homeworlds/api/game'
 import mockBank from '../../../__mock_data__/bank'
 import validate from '../../../src/logic/game-setup-validator'
 
@@ -19,13 +19,14 @@ describe('logic/game-setup-validator validation', () => {
 
     const playerId = 'foo'
 
-    const request: PlayerSetupRequest = {
-      action: {
-        type: 'HOMEWORLD_STAR1_SETUP',
-        sequenceNo: 0,
-        newStarColor: 'blue',
-        newStarSize: 'medium',
-      },
+    const request: PlayerSetupPayload = {
+      actions: [
+        {
+          type: 'HOMEWORLD_STAR1_SETUP',
+          newStarColor: 'blue',
+          newStarSize: 'medium',
+        },
+      ],
       gameId: 'game01',
       version: 1,
     }
@@ -45,12 +46,14 @@ describe('logic/game-setup-validator validation', () => {
             systemId: '10',
             stars: [{ starId: 'star10', color: 'red', size: 'large' }],
             ships: [],
+            isHomeworld: true,
           },
           {
             playerId: 'bar',
             systemId: '20',
             stars: [{ starId: 'star20', color: 'green', size: 'small' }],
             ships: [],
+            isHomeworld: true,
           },
         ],
         systems: [],
@@ -68,13 +71,14 @@ describe('logic/game-setup-validator validation', () => {
 
     const playerId = 'foo'
 
-    const request: PlayerSetupRequest = {
-      action: {
-        type: 'HOMEWORLD_STAR2_SETUP',
-        sequenceNo: 0,
-        newStarColor: 'blue',
-        newStarSize: 'medium',
-      },
+    const request: PlayerSetupPayload = {
+      actions: [
+        {
+          type: 'HOMEWORLD_STAR2_SETUP',
+          newStarColor: 'blue',
+          newStarSize: 'medium',
+        },
+      ],
       gameId: 'game01',
       version: 1,
     }
@@ -97,6 +101,7 @@ describe('logic/game-setup-validator validation', () => {
               { starId: 'star15', color: 'green', size: 'small' },
             ],
             ships: [],
+            isHomeworld: true,
           },
           {
             playerId: 'bar',
@@ -106,6 +111,7 @@ describe('logic/game-setup-validator validation', () => {
               { starId: 'star25', color: 'yellow', size: 'medium' },
             ],
             ships: [],
+            isHomeworld: true,
           },
         ],
         systems: [],
@@ -123,13 +129,14 @@ describe('logic/game-setup-validator validation', () => {
 
     const playerId = 'foo'
 
-    const request: PlayerSetupRequest = {
-      action: {
-        type: 'HOMEWORLD_SHIP_SETUP',
-        sequenceNo: 0,
-        newShipColor: 'blue',
-        newShipSize: 'medium',
-      },
+    const request: PlayerSetupPayload = {
+      actions: [
+        {
+          type: 'HOMEWORLD_SHIP_SETUP',
+          newShipColor: 'blue',
+          newShipSize: 'medium',
+        },
+      ],
       gameId: 'game01',
       version: 1,
     }
@@ -155,7 +162,7 @@ describe('logic/game-setup-validator validation', () => {
 
     const playerId = 'baz'
 
-    const request: PlayerSetupRequest = {
+    const request: PlayerSetupPayload = {
       action: {
         type: 'HOMEWORLD_STAR1_SETUP',
         sequenceNo: 0,
