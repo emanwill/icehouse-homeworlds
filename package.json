@@ -4,7 +4,7 @@
   "description": "",
   "private": true,
   "scripts": {
-    "format": "npm run format --workspaces --if-present",
+    "prettier": "npm run prettier --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm test --workspaces --if-present"
   },

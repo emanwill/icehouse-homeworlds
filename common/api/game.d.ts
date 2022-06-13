@@ -32,17 +32,21 @@ type Star = {
   size: TokenSize
 }
 
-type StarSystem = {
+interface AbstractSystem {
   systemId: string
-  star: Star
+  isHomeworld: boolean
   ships: Ship[]
 }
 
-type HomeworldSystem = {
-  systemId: string
+interface StarSystem extends AbstractSystem {
+  isHomeworld: false
+  star: Star
+}
+
+interface HomeworldSystem extends AbstractSystem {
+  isHomeworld: true
   playerId: string
   stars: Star[]
-  ships: Ship[]
 }
 
 type Board = {
@@ -58,14 +62,24 @@ type PlayerDetails = {
 }
 
 interface AbstractPlayerAction {
-  sequenceNo: number
   type: string
 }
+
+export interface EndTurnAction extends AbstractPlayerAction {
+  type: 'END_TURN'
+}
+
+export interface EndTurnEffect extends EndTurnAction {}
 
 export interface HomeworldStar1SetupAction extends AbstractPlayerAction {
   type: 'HOMEWORLD_STAR1_SETUP'
   newStarColor: TokenColor
   newStarSize: TokenSize
+}
+
+export interface HomeworldStar1SetupEffect extends HomeworldStar1SetupAction {
+  newHomeSystemId: string
+  newStarId: string
 }
 
 export interface HomeworldStar2SetupAction extends AbstractPlayerAction {
@@ -74,10 +88,20 @@ export interface HomeworldStar2SetupAction extends AbstractPlayerAction {
   newStarSize: TokenSize
 }
 
+export interface HomeworldStar2SetupEffect extends HomeworldStar2SetupAction {
+  homeSystemId: string
+  newStarId: string
+}
+
 export interface HomeworldShipSetupAction extends AbstractPlayerAction {
   type: 'HOMEWORLD_SHIP_SETUP'
   newShipColor: TokenColor
   newShipSize: TokenSize
+}
+
+export interface HomeworldShipSetupEffect extends HomeworldShipSetupAction {
+  homeSystemId: string
+  newShipId: string
 }
 
 export interface CatastropheAction extends AbstractPlayerAction {
@@ -86,10 +110,19 @@ export interface CatastropheAction extends AbstractPlayerAction {
   color: TokenColor
 }
 
+export interface CatastropheEffect extends CatastropheAction {
+  systemDestroyed: boolean
+  starsLost: string[]
+  shipsLost: string[]
+}
+
 export interface SacrificeAction extends AbstractPlayerAction {
   type: 'SACRIFICE'
+  systemId: string
   shipId: string
 }
+
+export interface SacrificeEffect extends SacrificeAction {}
 
 interface AbstractNormalAction extends AbstractPlayerAction {
   type: 'NORMAL'
@@ -103,16 +136,26 @@ export interface RedAction extends AbstractNormalAction {
   victimShipId: string
 }
 
+export interface RedEffect extends RedAction {}
+
 export interface YellowAction extends AbstractNormalAction {
   color: 'yellow'
   newShipColor: TokenColor
   newShipSize: TokenSize
 }
 
+export interface YellowEffect extends YellowAction {
+  newShipId: string
+}
+
 export interface GreenAction extends AbstractNormalAction {
   color: 'green'
   oldShipId: string
-  newShipColor: string
+  newShipColor: TokenColor
+}
+
+export interface GreenEffect extends GreenAction {
+  newShipId: string
 }
 
 interface AbstractBlueAction extends AbstractNormalAction {
@@ -122,7 +165,7 @@ interface AbstractBlueAction extends AbstractNormalAction {
   isTransit: boolean
 }
 
-interface BlueTransitAction extends AbstractBlueAction {
+export interface BlueTransitAction extends AbstractBlueAction {
   isExplore: false
   isTransit: true
   /**
@@ -131,11 +174,18 @@ interface BlueTransitAction extends AbstractBlueAction {
   transitTo: string
 }
 
-interface BlueExploreAction extends AbstractBlueAction {
+export interface BlueTransitEffect extends BlueTransitAction {}
+
+export interface BlueExploreAction extends AbstractBlueAction {
   isExplore: true
   isTransit: false
   newStarColor: TokenColor
   newStarSize: TokenSize
+}
+
+export interface BlueExploreEffect extends BlueExploreAction {
+  newSystemId: string
+  newStarId: string
 }
 
 export type SetupAction =
@@ -148,68 +198,43 @@ export type SetupEffect =
   | HomeworldStar2SetupEffect
   | HomeworldShipSetupEffect
 
-export type PlayerAction =
+export type GameplayAction =
   | CatastropheAction
   | SacrificeAction
+  | NormalAction
+  | EndTurnAction
+
+export type GameplayEffect =
+  | CatastropheEffect
+  | SacrificeEffect
+  | NormalEffect
+  | EndTurnEffect
+
+export type NormalAction =
   | RedAction
   | YellowAction
   | GreenAction
   | BlueExploreAction
   | BlueTransitAction
 
-type PlayerSetupRequest = {
-  gameId: string
-  version: number
-  action: SetupAction
-}
-
-type PlayerActionRequest = {
-  gameId: string
-  version: number
-  actions: PlayerAction[]
-}
-
-interface HomeworldStar1SetupEffect extends HomeworldStar1SetupAction {
-  newHomeSystemId: string
-  newStarId: string
-}
-
-interface HomeworldStar2SetupEffect extends HomeworldStar2SetupAction {
-  homeSystemId: string
-  newStarId: string
-}
-
-interface HomeworldShipSetupEffect extends HomeworldShipSetupAction {
-  homeSystemId: string
-  newShipId: string
-}
-
-type RedEffect = RedAction
-
-interface YellowEffect extends YellowAction {
-  newShipId: string
-}
-
-interface GreenEffect extends GreenAction {
-  newShipId: string
-}
-
-type BlueTransitEffect = BlueTransitAction
-
-interface BlueExploreEffect extends BlueExploreAction {
-  newSystemId: string
-  newStarId: string
-}
-
-type PlayerEffect =
-  | HomeworldStar1SetupEffect
-  | HomeworldStar2SetupEffect
-  | HomeworldShipSetupEffect
+export type NormalEffect =
   | RedEffect
   | YellowEffect
   | GreenEffect
   | BlueExploreEffect
   | BlueTransitEffect
+
+type PlayerSetupPayload = {
+  gameId: string
+  version: number
+  action: SetupAction
+}
+
+type PlayerGameplayPayload = {
+  gameId: string
+  version: number
+  actions: GameplayAction[]
+}
 
 export type GameState = {
   gameId: string
@@ -219,12 +244,16 @@ export type GameState = {
   players: PlayerDetails[]
   board: Board
   turnOf: string
+  sacrificePlay?: {
+    color: TokenColor
+    actionsRemaining: number
+  }
 }
 
 type GameStateUpdate = GameState & {
   previousBoard: Board
   previousTurnOf: string
-  previousTurnEffects: PlayerEffect[]
+  previousTurnEffects: (SetupEffect | GameplayEffect)[]
 }
 
 type GameSummary = {
@@ -252,12 +281,12 @@ export type ctosJoinGame = (gameId: string, cb: SocketAck<GameState>) => void
 export type ctosBeginGame = (gameId: string, cb: SocketAck<GameState>) => void
 
 export type ctosCommitSetupAction = (
-  action: PlayerSetupRequest,
+  action: PlayerSetupPayload,
   cb: SocketAck<boolean>
 ) => void
 
 export type ctosCommitGameAction = (
-  action: PlayerActionRequest,
+  action: PlayerGameplayPayload,
   cb: SocketAck<boolean>
 ) => void
 

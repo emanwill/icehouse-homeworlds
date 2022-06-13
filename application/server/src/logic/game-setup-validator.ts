@@ -3,8 +3,7 @@ import {
   HomeworldShipSetupAction,
   HomeworldStar1SetupAction,
   HomeworldStar2SetupAction,
-  PlayerSetupRequest,
-  SetupAction,
+  PlayerSetupPayload,
   TokenColor,
   TokenSize,
 } from '@icehouse-homeworlds/api/game'
@@ -12,7 +11,7 @@ import {
 export default function isValidSetupRequest(
   game: GameState,
   requesterPlayerId: string,
-  request: PlayerSetupRequest
+  request: PlayerSetupPayload
 ): boolean {
   // Check whether request is for this game
   if (game.gameId !== request.gameId) return false

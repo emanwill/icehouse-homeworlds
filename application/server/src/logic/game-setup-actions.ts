@@ -56,7 +56,7 @@ export function applyHwStar1SetupAction(
     // NO ACTION
   } else {
     // Proceed in normal turn order
-    game.turnOf = getNextTurnPlayerId(game)
+    game.turnOf = getNextTurnPlayerId(game) ?? ''
   }
 
   return [effect, game]
@@ -82,12 +82,12 @@ export function applyHwStar2SetupAction(
   const hwSystem = game.board.homeworlds.find(
     (hw) => hw.playerId === game.turnOf
   )
-  hwSystem.stars.push(star)
+  hwSystem?.stars.push(star)
 
   // Document the effect of the action\
   const effect: HomeworldStar2SetupEffect = {
     ...action,
-    homeSystemId: hwSystem.systemId,
+    homeSystemId: hwSystem?.systemId ?? '',
     newStarId: star.starId,
   }
 
@@ -102,7 +102,7 @@ export function applyHwStar2SetupAction(
     game.status = 'SETUP2'
   } else {
     // Proceed in reverse turn order
-    game.turnOf = getNextTurnPlayerId(game, true)
+    game.turnOf = getNextTurnPlayerId(game, true) ?? ''
   }
 
   return [effect, game]
@@ -129,12 +129,12 @@ export function applyHwShipSetupAction(
   const hwSystem = game.board.homeworlds.find(
     (hw) => hw.playerId === game.turnOf
   )
-  hwSystem.ships.push(ship)
+  hwSystem?.ships.push(ship)
 
   // Document the effect of the action
   const effect: HomeworldShipSetupEffect = {
     ...action,
-    homeSystemId: hwSystem.systemId,
+    homeSystemId: hwSystem?.systemId ?? '',
     newShipId: ship.shipId,
   }
 
@@ -148,7 +148,7 @@ export function applyHwShipSetupAction(
   }
 
   // Turn order is normal both in Setup 3 and afterward
-  game.turnOf = getNextTurnPlayerId(game)
+  game.turnOf = getNextTurnPlayerId(game) ?? ''
 
   return [effect, game]
 }
