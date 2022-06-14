@@ -222,13 +222,11 @@ export type NormalEffect =
 
 type PlayerSetupPayload = {
   gameId: string
-  version: number
   actions: SetupAction[]
 }
 
 type PlayerGameplayPayload = {
   gameId: string
-  version: number
   actions: GameplayAction[]
 }
 

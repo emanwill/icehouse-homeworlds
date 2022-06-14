@@ -4,12 +4,13 @@ import {
   GameplayEffect,
   PlayerGameplayPayload,
 } from '@icehouse-homeworlds/api/game'
+import { log } from '../util'
 import applyGameplayAction from './game-play-actions'
 import isValidGameplayAction from './game-play-validator'
 
 type ActionState = [boolean, GameplayEffect[], GameState]
 
-export function performGameUpdate(
+export default function applyGameStateUpdate(
   oldState: GameState,
   playerId: string,
   update: PlayerGameplayPayload
@@ -27,6 +28,7 @@ export function performGameUpdate(
   ])
 
   if (isValid) {
+    newState.version++
     updatePlayerStatuses(newState)
     return [effects, newState]
   } else {
@@ -65,11 +67,14 @@ function actionReducerFor(playerId: string) {
 
     if (!isValid) return [isValid, effects, oldState]
 
-    const [effect, postActionState] = applyGameplayAction(oldState, action)
-
-    effects.push(effect)
-
-    return [isValid, effects, postActionState]
+    try {
+      const [effect, postActionState] = applyGameplayAction(oldState, action)
+      effects.push(effect)
+      return [isValid, effects, postActionState]
+    } catch (e) {
+      log.error(e)
+      return [false, [], oldState]
+    }
   }
 }
 

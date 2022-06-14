@@ -18,3 +18,9 @@ export async function findGameById(
 
   return games.get(gameId)
 }
+
+export async function updateGameById(gameId: string, game: GameState) {
+  await asyncDelay()
+
+  games.set(gameId, game)
+}

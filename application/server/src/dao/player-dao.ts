@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io'
-import { GameObjectIds } from '../util'
+import { awaitTimeout, GameObjectIds } from '../util'
 
 type PlayerSocket = {
   socketId: string
@@ -10,7 +10,9 @@ const mapBySocketId = new Map<string, PlayerSocket>()
 
 const mapByPlayerId = new Map<string, PlayerSocket>()
 
-export const createPlayer = (ioSocket: Socket) => {
+export const createPlayer = async (ioSocket: Socket) => {
+  await awaitTimeout()
+
   const socket: PlayerSocket = {
     socketId: ioSocket.id,
     playerId: GameObjectIds.player(),
@@ -22,20 +24,28 @@ export const createPlayer = (ioSocket: Socket) => {
   return socket.playerId
 }
 
-export const addPlayerSocket = (socket: PlayerSocket) => {
+export const addPlayerSocket = async (socket: PlayerSocket) => {
+  await awaitTimeout()
+
   mapBySocketId.set(socket.socketId, socket)
   mapByPlayerId.set(socket.playerId, socket)
 }
 
-export const findOneBySocketId = (socketId: string) => {
+export const findPlayerSocketBySocketId = async (socketId: string) => {
+  await awaitTimeout()
+
   return mapBySocketId.get(socketId)
 }
 
-export const findOneByPlayerId = (playerId: string) => {
+export const findPlayerSocketByPlayerId = async (playerId: string) => {
+  await awaitTimeout()
+
   return mapByPlayerId.get(playerId)
 }
 
-export const deleteOneByPlayerId = (playerId: string) => {
+export const deleteOneByPlayerId = async (playerId: string) => {
+  await awaitTimeout()
+
   const socket = mapByPlayerId.get(playerId)
 
   if (!socket) return
@@ -44,7 +54,9 @@ export const deleteOneByPlayerId = (playerId: string) => {
   mapBySocketId.delete(socket.socketId)
 }
 
-export const deleteOneBySocketId = (socketId: string) => {
+export const deleteOneBySocketId = async (socketId: string) => {
+  await awaitTimeout()
+
   const socket = mapBySocketId.get(socketId)
 
   if (!socket) return

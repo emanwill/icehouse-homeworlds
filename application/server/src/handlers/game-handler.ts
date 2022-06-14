@@ -2,13 +2,19 @@ import { SocketAck } from '@icehouse-homeworlds/api/common'
 import {
   CreateGameOptions,
   GameState,
+  GameStateUpdate,
   PlayerGameplayPayload,
   PlayerSetupPayload,
 } from '@icehouse-homeworlds/api/game'
-import { addGame, findGameById } from '../dao/games-dao'
-import { createPlayer } from '../dao/player-dao'
+import { addGame, findGameById, updateGameById } from '../dao/games-dao'
+import {
+  createPlayer,
+  findPlayerSocketByPlayerId,
+  findPlayerSocketBySocketId,
+} from '../dao/player-dao'
 import { findUserBySocketId } from '../dao/user-dao'
 import { IceworldsIOServer, IceworldsIOSocket } from '../express-io-server'
+import applyGameStateUpdate from '../logic/game-play'
 import { addPlayer, canAddPlayer, createNewGame } from '../logic/game-setup'
 
 export default function registerGameHandler(
@@ -25,7 +31,7 @@ export default function registerGameHandler(
       return
     }
 
-    const playerId = createPlayer(socket)
+    const playerId = await createPlayer(socket)
 
     const game = createNewGame({
       playerSlots: options.playerSlots,
@@ -59,7 +65,7 @@ export default function registerGameHandler(
       return
     }
 
-    const playerId = createPlayer(socket)
+    const playerId = await createPlayer(socket)
 
     addPlayer(game, { playerId, playerName: user.name, status: 'PLAYING' })
   }
@@ -76,11 +82,54 @@ export default function registerGameHandler(
     //
   }
 
-  const onGameMove = (
-    payload: PlayerGameplayPayload,
+  const onGameMove = async (
+    gameplayPayload: PlayerGameplayPayload,
     cb: SocketAck<boolean>
   ) => {
-    //
+    const user = findUserBySocketId(socket.id)
+    if (!user) {
+      cb({ status: 401, message: 'Unregistered user' })
+      return
+    }
+
+    const playerSocket = await findPlayerSocketBySocketId(socket.id)
+    if (!playerSocket) {
+      cb({ status: 401, message: 'User is not a registered player' })
+      return
+    }
+
+    const prevGameState = await findGameById(gameplayPayload.gameId)
+    if (!prevGameState) {
+      cb({ status: 404, message: 'Unknown game ID' })
+      return
+    }
+
+    const [effects, nextGameState] = applyGameStateUpdate(
+      prevGameState,
+      playerSocket.playerId,
+      gameplayPayload
+    )
+
+    if (effects.length === 0) {
+      cb(null, false)
+      return
+    }
+
+    await updateGameById(gameplayPayload.gameId, nextGameState)
+
+    cb(null, true)
+
+    const updateResponse: GameStateUpdate = {
+      ...nextGameState,
+      previousBoard: prevGameState.board,
+      previousTurnOf: prevGameState.turnOf,
+      previousTurnEffects: effects,
+    }
+
+    for (const p of nextGameState.players) {
+      const pSocket = await findPlayerSocketByPlayerId(p.playerId)
+      if (pSocket) io.to(pSocket.socketId).emit('game:state', updateResponse)
+    }
   }
 
   const onDisconnect = () => {
