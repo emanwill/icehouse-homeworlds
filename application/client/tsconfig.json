@@ -9,10 +9,5 @@
     "strict": true,
     "esModuleInterop": true
   },
-  "include": [
-    "./common/api/*.ts",
-    "./application/client/src/**/*.ts",
-    "./application/server/src/**/*.ts",
-    "./application/server/__test__/**/*.ts"
-  ]
+  "include": ["./src/**/*.ts"]
 }
