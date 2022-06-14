@@ -58,7 +58,6 @@ function applyEndTurnAction(
   // Discard any remaining sacrifice-granted actions
   delete game.sacrificePlay
 
-  // TODO: transition to next player's turn
   const startAt = game.players.findIndex((p) => p.playerId === game.turnOf)
 
   if (startAt < 0) throw Error('What the Casper? Player turn matches no player')
@@ -125,7 +124,7 @@ function applyCatastropheAction(
       removeSystemById(game, system.systemId)
     }
   } else if (system.star.color === action.color) {
-    // Normal system: remove system if star is affected
+    // Normal system's star removed by the catastrophe; remove the system
     removeSystemById(game, system.systemId)
   }
 

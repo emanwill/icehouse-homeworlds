@@ -2,32 +2,59 @@ import { GameState } from '@icehouse-homeworlds/api'
 import {
   GameplayAction,
   GameplayEffect,
-  GameStateUpdate,
   PlayerGameplayPayload,
 } from '@icehouse-homeworlds/api/game'
 import applyGameplayAction from './game-play-actions'
 import isValidGameplayAction from './game-play-validator'
 
-function performGameUpdate(
-  game: GameState,
+type ActionState = [boolean, GameplayEffect[], GameState]
+
+export function performGameUpdate(
+  oldState: GameState,
   playerId: string,
   update: PlayerGameplayPayload
-) {
-  // TODO check validity of overall request (player is in the game; versions match; etc.)
+): [GameplayEffect[], GameState] {
+  if (!isValidTurnForPlayer(oldState, playerId)) {
+    return [[], oldState]
+  }
 
-  /*
-  Strategy:
-  validate an action
-  apply the action
-  perform post-action cleanup
-  continue to next action in the list
-  ...
-  update player statuses
-  */
+  const actionReducer = actionReducerFor(playerId)
 
-  type ActionState = [boolean, GameplayEffect[], GameState]
+  const [isValid, effects, newState] = update.actions.reduce(actionReducer, [
+    true,
+    [],
+    oldState,
+  ])
 
-  const actionReducer = (
+  if (isValid) {
+    updatePlayerStatuses(newState)
+    return [effects, newState]
+  } else {
+    return [[], oldState]
+  }
+}
+
+function isValidTurnForPlayer(game: GameState, playerId: string) {
+  if (!game.players.some((p) => p.playerId === playerId)) {
+    // TODO: player isn't part of this game; abandon ship!
+    return false
+  }
+
+  if (game.turnOf !== playerId) {
+    // TODO: player is acting out-of-turn; abandon ship!
+    return false
+  }
+
+  if (game.status !== 'PLAY') {
+    // TODO: game is in the wrong phase for this kind of action
+    return false
+  }
+
+  return true
+}
+
+function actionReducerFor(playerId: string) {
+  return (
     [isValid, effects, oldState]: ActionState,
     action: GameplayAction
   ): ActionState => {
@@ -44,18 +71,28 @@ function performGameUpdate(
 
     return [isValid, effects, postActionState]
   }
+}
 
-  const [isValid, effects, newState] = update.actions.reduce(actionReducer, [
-    true,
-    [],
-    game,
-  ])
+function updatePlayerStatuses(game: GameState): GameState {
+  // Perform post-actions cleanup of player state
+  game.players
+    .filter((p) => p.status === 'PLAYING')
+    .forEach((p) => {
+      const hw = game.board.homeworlds.find((hw) => hw.playerId === p.playerId)
 
-  if (isValid) {
-    // The update was successful; all actions were valid
-    // TODO: ???
-  } else {
-    // The update failed; one or more actions were invalid
-    // TODO: ???
+      if (hw && hw.ships.some((s) => s.playerId === p.playerId)) {
+        p.status = 'PLAYING'
+      } else {
+        p.status = 'LOST'
+      }
+    })
+
+  const stillActivePlayers = game.players.filter((p) => p.status == 'PLAYING')
+
+  if (stillActivePlayers.length < 2) {
+    stillActivePlayers[0].status = 'WON'
+    game.status = 'END'
   }
+
+  return game
 }
