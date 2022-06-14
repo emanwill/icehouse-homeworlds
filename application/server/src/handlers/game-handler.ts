@@ -6,16 +6,17 @@ import {
   PlayerGameplayPayload,
   PlayerSetupPayload,
 } from '@icehouse-homeworlds/api/game'
-import { addGame, findGameById, updateGameById } from '../dao/games-dao'
+import { addGame, findGameById, updateGameById } from '../database/games-db'
 import {
   createPlayer,
   findPlayerSocketByPlayerId,
   findPlayerSocketBySocketId,
-} from '../dao/player-dao'
-import { findUserBySocketId } from '../dao/user-dao'
+} from '../database/players-db'
+import { deleteUserBySocketId, findUserBySocketId } from '../database/users-db'
 import { IceworldsIOServer, IceworldsIOSocket } from '../express-io-server'
 import applyGameStateUpdate from '../logic/game-play'
 import { addPlayer, canAddPlayer, createNewGame } from '../logic/game-setup'
+import { Errors } from './socket-messaging'
 
 export default function registerGameHandler(
   io: IceworldsIOServer,
@@ -25,9 +26,9 @@ export default function registerGameHandler(
     options: CreateGameOptions,
     cb: SocketAck<GameState>
   ) => {
-    const user = findUserBySocketId(socket.id)
+    const user = await findUserBySocketId(socket.id)
     if (!user) {
-      cb({ status: 401, errorCode: 401, message: 'Unregistered user' })
+      cb({ code: 401, message: 'Unregistered user' })
       return
     }
 
@@ -48,20 +49,20 @@ export default function registerGameHandler(
   }
 
   const onGameJoin = async (gameId: string, cb: SocketAck<GameState>) => {
-    const user = findUserBySocketId(socket.id)
+    const user = await findUserBySocketId(socket.id)
     if (!user) {
-      cb({ status: 401, errorCode: 401, message: 'Unregistered user' })
+      cb(Errors.USER_NOT_FOUND)
       return
     }
 
     const game = await findGameById(gameId)
     if (!game) {
-      cb({ status: 404, message: 'Unknown game ID' })
+      cb(Errors.GAME_NOT_FOUND)
       return
     }
 
     if (!canAddPlayer(game)) {
-      cb({ status: 409, message: 'Game is full' })
+      cb(Errors.GAME_FULL)
       return
     }
 
@@ -83,31 +84,31 @@ export default function registerGameHandler(
   }
 
   const onGameMove = async (
-    gameplayPayload: PlayerGameplayPayload,
+    playerPayload: PlayerGameplayPayload,
     cb: SocketAck<boolean>
   ) => {
-    const user = findUserBySocketId(socket.id)
+    const user = await findUserBySocketId(socket.id)
     if (!user) {
-      cb({ status: 401, message: 'Unregistered user' })
+      cb(Errors.USER_NOT_FOUND)
       return
     }
 
     const playerSocket = await findPlayerSocketBySocketId(socket.id)
     if (!playerSocket) {
-      cb({ status: 401, message: 'User is not a registered player' })
+      cb(Errors.PLAYER_NOT_FOUND)
       return
     }
 
-    const prevGameState = await findGameById(gameplayPayload.gameId)
+    const prevGameState = await findGameById(playerPayload.gameId)
     if (!prevGameState) {
-      cb({ status: 404, message: 'Unknown game ID' })
+      cb(Errors.GAME_NOT_FOUND)
       return
     }
 
     const [effects, nextGameState] = applyGameStateUpdate(
       prevGameState,
       playerSocket.playerId,
-      gameplayPayload
+      playerPayload
     )
 
     if (effects.length === 0) {
@@ -115,7 +116,7 @@ export default function registerGameHandler(
       return
     }
 
-    await updateGameById(gameplayPayload.gameId, nextGameState)
+    await updateGameById(playerPayload.gameId, nextGameState)
 
     cb(null, true)
 
@@ -132,8 +133,11 @@ export default function registerGameHandler(
     }
   }
 
-  const onDisconnect = () => {
-    //
+  const onDisconnect = async () => {
+    await deleteUserBySocketId(socket.id)
+
+    const playerSocket = await findPlayerSocketBySocketId(socket.id)
+    if (!playerSocket) return
   }
 
   socket

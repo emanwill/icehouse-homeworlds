@@ -1,6 +1,5 @@
 type ErrorPacket = {
-  status: number
-  errorCode?: number
+  code: number
   message: string
 }
 

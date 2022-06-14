@@ -1,10 +1,10 @@
-import { AbstractSystem, GameState } from '@icehouse-homeworlds/api/game'
+import { GameState } from '@icehouse-homeworlds/api/game'
 import { randomBytes } from 'crypto'
 import { networkInterfaces } from 'os'
 import rfdc from 'rfdc'
 import { createLogger, format, transports } from 'winston'
 
-const ID_LEN = 6
+const ID_LEN = 8
 
 export const log = createLogger({
   level: 'info',
@@ -34,7 +34,7 @@ export const GameObjectIds = {
   starSystem: () => createId('sy:', ID_LEN),
 }
 
-export const awaitTimeout = (delay = 0) =>
+export const asyncTimeout = (delay = 0) =>
   new Promise<void>((resolve) => setTimeout(resolve, delay))
 
 const cloneWithProtoNoCircle = rfdc({ proto: true, circles: false })
