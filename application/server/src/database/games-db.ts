@@ -35,10 +35,18 @@ export async function updateGameById(gameId: string, game: GameState) {
   updatePlayerIdsMap(game)
 }
 
-function updatePlayerIdsMap({ gameId, players }: GameState) {
-  players.forEach(({ playerId }) => gameIdsByPlayerIds.set(playerId, gameId))
+export async function deleteGameById(gameId: string) {
+  await asyncTimeout()
+
+  const game = games.get(gameId)
+
+  if (game) {
+    game.players.forEach(({ playerId }) => gameIdsByPlayerIds.delete(playerId))
+  }
+
+  games.delete(gameId)
 }
 
-function removePlayersOfGame({ players }: GameState) {
-  players.forEach(({ playerId }) => gameIdsByPlayerIds.delete(playerId))
+function updatePlayerIdsMap({ gameId, players }: GameState) {
+  players.forEach(({ playerId }) => gameIdsByPlayerIds.set(playerId, gameId))
 }

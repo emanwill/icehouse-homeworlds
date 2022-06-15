@@ -1,66 +1,49 @@
 import { Socket } from 'socket.io'
 import { asyncTimeout, GameObjectIds } from '../util'
 
-type PlayerSocket = {
+type PlayerRecord = {
   socketId: string
+  playerName: string
   playerId: string
 }
 
-const mapBySocketId = new Map<string, PlayerSocket>()
+const recordsBySocketId = new Map<string, PlayerRecord>()
 
-const mapByPlayerId = new Map<string, PlayerSocket>()
+const recordsByPlayerId = new Map<string, PlayerRecord>()
 
-export const createPlayer = async (ioSocket: Socket) => {
+export async function createPlayer(socket: Socket, name: string) {
   await asyncTimeout()
 
-  const socket: PlayerSocket = {
-    socketId: ioSocket.id,
+  const record: PlayerRecord = {
+    socketId: socket.id,
+    playerName: name,
     playerId: GameObjectIds.player(),
   }
 
-  mapBySocketId.set(socket.socketId, socket)
-  mapByPlayerId.set(socket.playerId, socket)
+  recordsByPlayerId.set(record.playerId, record)
+  recordsBySocketId.set(record.socketId, record)
 
-  return socket.playerId
+  return record
 }
 
-export const addPlayerSocket = async (socket: PlayerSocket) => {
+export async function findPlayerBySocketId(id: string) {
   await asyncTimeout()
 
-  mapBySocketId.set(socket.socketId, socket)
-  mapByPlayerId.set(socket.playerId, socket)
+  return recordsBySocketId.get(id)
 }
 
-export const findPlayerSocketBySocketId = async (socketId: string) => {
+export async function findPlayerByPlayerId(id: string) {
   await asyncTimeout()
 
-  return mapBySocketId.get(socketId)
+  return recordsByPlayerId.get(id)
 }
 
-export const findPlayerSocketByPlayerId = async (playerId: string) => {
+export async function deletePlayerBySocketId(id: string) {
   await asyncTimeout()
 
-  return mapByPlayerId.get(playerId)
-}
-
-export const deleteOneByPlayerId = async (playerId: string) => {
-  await asyncTimeout()
-
-  const socket = mapByPlayerId.get(playerId)
-
-  if (!socket) return
-
-  mapByPlayerId.delete(socket.playerId)
-  mapBySocketId.delete(socket.socketId)
-}
-
-export const deleteOneBySocketId = async (socketId: string) => {
-  await asyncTimeout()
-
-  const socket = mapBySocketId.get(socketId)
-
-  if (!socket) return
-
-  mapByPlayerId.delete(socket.playerId)
-  mapBySocketId.delete(socket.socketId)
+  const record = recordsBySocketId.get(id)
+  if (record) {
+    recordsByPlayerId.delete(record.playerId)
+    recordsBySocketId.delete(record.socketId)
+  }
 }

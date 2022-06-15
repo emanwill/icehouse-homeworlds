@@ -4,7 +4,7 @@ import { networkInterfaces } from 'os'
 import rfdc from 'rfdc'
 import { createLogger, format, transports } from 'winston'
 
-const ID_LEN = 8
+const ID_LEN = 10
 
 export const log = createLogger({
   level: 'info',

@@ -8,7 +8,7 @@ type ServerEvents = {
   'socket:disconnected': Socket
   'user:registered': User
   'lobby:user-joined': User
-  'game:user-left': { playerId: string }
+  'game:player-left': { playerId: string }
   'game:created': GameSummary
   'game:updated': GameStateUpdate
   'game:deleted': { gameId: string }
